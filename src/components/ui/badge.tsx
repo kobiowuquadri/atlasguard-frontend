@@ -3,18 +3,18 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 export const badgeVariants = cva(
-  'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium whitespace-nowrap [&_svg]:size-3.5 [&_svg]:shrink-0',
+  'inline-flex h-[22px] items-center gap-1 rounded-full px-2 text-[11.5px] leading-none font-medium whitespace-nowrap inset-ring [&_svg]:size-3 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
-        default: 'border-border bg-elevated text-foreground',
-        primary: 'border-primary/30 bg-primary-soft text-violet-200',
-        secondary: 'border-secondary/30 bg-secondary-soft text-cyan-200',
-        success: 'border-success/30 bg-success-soft text-green-300',
-        warning: 'border-warning/30 bg-warning-soft text-amber-200',
-        danger: 'border-danger/30 bg-danger-soft text-red-300',
-        neutral: 'border-border-strong bg-neutral-soft text-slate-300',
-        outline: 'border-border-strong text-muted-foreground',
+        default: 'bg-white/[0.06] text-foreground inset-ring-white/10',
+        primary: 'bg-primary-soft text-violet-200 inset-ring-violet-400/25',
+        secondary: 'bg-secondary-soft text-cyan-200 inset-ring-cyan-400/25',
+        success: 'bg-success-soft text-green-300 inset-ring-green-400/25',
+        warning: 'bg-warning-soft text-amber-200 inset-ring-amber-400/25',
+        danger: 'bg-danger-soft text-red-300 inset-ring-red-400/25',
+        neutral: 'bg-white/[0.05] text-slate-300 inset-ring-white/10',
+        outline: 'bg-transparent text-muted-foreground inset-ring-white/12',
       },
     },
     defaultVariants: { variant: 'default' },

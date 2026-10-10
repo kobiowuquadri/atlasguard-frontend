@@ -6,23 +6,22 @@ import {
   CircleMinus,
   CircleX,
   FlaskConical,
-  LoaderCircle,
   ShieldCheck,
   TriangleAlert,
 } from 'lucide-react';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
 import type { CheckStatus, ConsistencyVerdict, ContentReviewStatus, FactStatus, RunStatus } from '@/lib/api/types';
-import { languageName, VERDICT_LABELS, type Verdict } from '@/lib/constants';
+import { LANGUAGES, languageName, VERDICT_LABELS, type Verdict } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
 type Variant = NonNullable<BadgeProps['variant']>;
 
-const VERDICT_META: Record<Verdict, { variant: Variant; icon: typeof CircleCheck }> = {
-  PASSED: { variant: 'success', icon: CircleCheck },
-  FAILED: { variant: 'danger', icon: CircleX },
-  NEEDS_REVIEW: { variant: 'warning', icon: CircleAlert },
-  ERROR: { variant: 'neutral', icon: TriangleAlert },
-  SKIPPED: { variant: 'neutral', icon: CircleMinus },
+const VERDICT_META: Record<Verdict, { variant: Variant; icon: typeof CircleCheck; text: string }> = {
+  PASSED: { variant: 'success', icon: CircleCheck, text: 'text-success' },
+  FAILED: { variant: 'danger', icon: CircleX, text: 'text-danger' },
+  NEEDS_REVIEW: { variant: 'warning', icon: CircleAlert, text: 'text-warning' },
+  ERROR: { variant: 'neutral', icon: TriangleAlert, text: 'text-slate-400' },
+  SKIPPED: { variant: 'neutral', icon: CircleMinus, text: 'text-slate-500' },
 };
 
 /** Status is always icon + label, never colour alone. */
@@ -47,19 +46,29 @@ export const VERDICT_COLORS: Record<Verdict, string> = {
   PASSED: 'var(--color-success)',
   FAILED: 'var(--color-danger)',
   NEEDS_REVIEW: 'var(--color-warning)',
-  ERROR: '#64748b',
-  SKIPPED: '#475569',
+  ERROR: '#94a3b8',
+  SKIPPED: '#4b5567',
 };
 
 export function VerdictIcon({ verdict, className }: { verdict: Verdict; className?: string }) {
   const Icon = VERDICT_META[verdict].icon;
-  const color = { PASSED: 'text-success', FAILED: 'text-danger', NEEDS_REVIEW: 'text-warning', ERROR: 'text-slate-400', SKIPPED: 'text-slate-500' }[verdict];
-  return <Icon className={cn('size-4', color, className)} aria-hidden />;
+  return <Icon className={cn('size-4', VERDICT_META[verdict].text, className)} aria-hidden />;
 }
 
-const RUN_META: Record<RunStatus, { variant: Variant; label: string; icon: typeof CircleCheck; spin?: boolean }> = {
+/** A small status light; `pulse` adds a slow ping for live states. */
+export function StatusDot({ tone, pulse = false, className }: { tone: 'success' | 'danger' | 'warning' | 'neutral' | 'primary'; pulse?: boolean; className?: string }) {
+  const color = { success: 'bg-success', danger: 'bg-danger', warning: 'bg-warning', neutral: 'bg-slate-500', primary: 'bg-violet-400' }[tone];
+  return (
+    <span className={cn('relative inline-flex size-2 shrink-0', className)} aria-hidden>
+      {pulse && <span className={cn('absolute inset-0 rounded-full animate-ping-slow', color)} />}
+      <span className={cn('relative size-2 rounded-full', color)} />
+    </span>
+  );
+}
+
+const RUN_META: Record<RunStatus, { variant: Variant; label: string; icon?: typeof CircleCheck }> = {
   QUEUED: { variant: 'neutral', label: 'Queued', icon: CircleDashed },
-  RUNNING: { variant: 'primary', label: 'Running', icon: LoaderCircle, spin: true },
+  RUNNING: { variant: 'primary', label: 'Running' },
   COMPLETED: { variant: 'success', label: 'Completed', icon: CircleCheck },
   FAILED: { variant: 'danger', label: 'Failed', icon: CircleX },
   CANCELLED: { variant: 'neutral', label: 'Cancelled', icon: Ban },
@@ -70,7 +79,7 @@ export function RunStatusBadge({ status, className }: { status: RunStatus; class
   const Icon = meta.icon;
   return (
     <Badge variant={meta.variant} className={className}>
-      <Icon aria-hidden className={meta.spin ? 'animate-spin' : undefined} /> {meta.label}
+      {Icon ? <Icon aria-hidden /> : <StatusDot tone="primary" pulse className="mx-0.5 size-1.5 [&>span]:size-1.5" />} {meta.label}
     </Badge>
   );
 }
@@ -82,11 +91,11 @@ const CONSISTENCY_META: Record<ConsistencyVerdict, { variant: Variant; label: st
   INSUFFICIENT_DATA: { variant: 'neutral', label: 'Insufficient data', icon: CircleMinus },
 };
 
-export function ConsistencyBadge({ verdict }: { verdict: ConsistencyVerdict }) {
+export function ConsistencyBadge({ verdict, className }: { verdict: ConsistencyVerdict; className?: string }) {
   const meta = CONSISTENCY_META[verdict];
   const Icon = meta.icon;
   return (
-    <Badge variant={meta.variant}>
+    <Badge variant={meta.variant} className={className}>
       <Icon aria-hidden /> {meta.label}
     </Badge>
   );
@@ -110,9 +119,9 @@ export function ReviewStatusBadge({ status }: { status: ContentReviewStatus }) {
 }
 
 const CHECK_META: Record<CheckStatus, { label: string; icon: typeof CircleCheck; color: string }> = {
-  pass: { label: 'Pass', icon: CircleCheck, color: 'text-success' },
-  fail: { label: 'Fail', icon: CircleX, color: 'text-danger' },
-  uncertain: { label: 'Needs review', icon: CircleAlert, color: 'text-warning' },
+  pass: { label: 'Pass', icon: CircleCheck, color: 'text-green-300' },
+  fail: { label: 'Fail', icon: CircleX, color: 'text-red-300' },
+  uncertain: { label: 'Needs review', icon: CircleAlert, color: 'text-amber-200' },
   not_applicable: { label: 'Info', icon: CircleMinus, color: 'text-slate-400' },
 };
 
@@ -126,17 +135,22 @@ export function CheckStatusLabel({ status }: { status: CheckStatus }) {
   );
 }
 
-const FACT_META: Record<FactStatus | 'no_response', { variant: Variant; label: string }> = {
-  supported: { variant: 'success', label: 'Supported' },
-  contradicted: { variant: 'danger', label: 'Contradicted' },
-  not_found: { variant: 'warning', label: 'Not found' },
-  uncertain: { variant: 'warning', label: 'Uncertain' },
-  no_response: { variant: 'neutral', label: 'No response' },
+export const FACT_META: Record<FactStatus | 'no_response', { variant: Variant; label: string; icon: typeof CircleCheck; text: string }> = {
+  supported: { variant: 'success', label: 'Supported', icon: CircleCheck, text: 'text-success' },
+  contradicted: { variant: 'danger', label: 'Contradicted', icon: CircleX, text: 'text-danger' },
+  not_found: { variant: 'warning', label: 'Not found', icon: CircleMinus, text: 'text-warning' },
+  uncertain: { variant: 'warning', label: 'Uncertain', icon: CircleAlert, text: 'text-warning' },
+  no_response: { variant: 'neutral', label: 'No response', icon: CircleDashed, text: 'text-slate-400' },
 };
 
 export function FactStatusBadge({ status }: { status: FactStatus | 'no_response' }) {
   const meta = FACT_META[status];
-  return <Badge variant={meta.variant}>{meta.label}</Badge>;
+  const Icon = meta.icon;
+  return (
+    <Badge variant={meta.variant}>
+      <Icon aria-hidden /> {meta.label}
+    </Badge>
+  );
 }
 
 export function SimulatedBadge({ className }: { className?: string }) {
@@ -147,11 +161,24 @@ export function SimulatedBadge({ className }: { className?: string }) {
   );
 }
 
-export function LanguageBadge({ code, count }: { code: string; count?: number }) {
+const SHORT = Object.fromEntries(LANGUAGES.map((l) => [l.code, l.short])) as Record<string, string>;
+
+/** Neutral language chip: a mono code plate plus the name. Languages never get status colours. */
+export function LanguageChip({ code, count, compact = false, className }: { code: string; count?: number; compact?: boolean; className?: string }) {
   return (
-    <Badge variant="outline" className="text-slate-300">
-      {languageName(code)}
-      {count !== undefined && <span className="text-subtle-foreground tabular">{count}</span>}
-    </Badge>
+    <span
+      className={cn(
+        'inline-flex h-[22px] items-center gap-1.5 rounded-full bg-white/[0.04] pr-2 pl-0.5 text-[11.5px] font-medium whitespace-nowrap text-slate-300 inset-ring inset-ring-white/10',
+        compact && 'pr-0.5',
+        className,
+      )}
+      title={compact ? languageName(code) : undefined}
+    >
+      <span className="inline-flex h-[18px] min-w-[26px] items-center justify-center rounded-full bg-white/[0.07] px-1 font-mono text-[10px] tracking-wide text-slate-200">
+        {SHORT[code] ?? code.toUpperCase()}
+      </span>
+      {!compact && languageName(code)}
+      {count !== undefined && <span className="tabular text-subtle-foreground">{count}</span>}
+    </span>
   );
 }

@@ -1,30 +1,40 @@
 @import 'tailwindcss';
 
 /*
- * AtlasGuard design tokens. Dark-only by design.
- * Text contrast on card surfaces: foreground 16:1, muted-foreground 6.7:1 (AA).
+ * AtlasGuard design system — "instrument-grade trust".
+ * A calm dark canvas, layered surfaces, colour reserved for meaning (status) and for a few
+ * brand moments (violet → cyan). Text contrast on cards: foreground 16:1, muted 6.7:1.
  */
 @theme {
+  /* canvas and surfaces (spec: #09090B / #111318 / #181B22) */
   --color-background: #09090b;
-  --color-background-subtle: #111318;
+  --color-background-subtle: #0c0d11;
+  --color-panel: #111318;
   --color-card: #181b22;
-  --color-card-hover: #1e222b;
+  --color-card-hover: #1d2029;
   --color-elevated: #20242e;
+  --color-inset: #0e1015;
+
   --color-foreground: #f8fafc;
   --color-muted-foreground: #94a3b8;
   --color-subtle-foreground: #64748b;
-  --color-border: #262a33;
-  --color-border-strong: #343a46;
-  --color-input: #2a2f3a;
-  --color-ring: #7c3aed;
 
+  --color-border: rgb(255 255 255 / 0.07);
+  --color-border-strong: rgb(255 255 255 / 0.12);
+  --color-input: rgb(255 255 255 / 0.09);
+  --color-ring: #8b5cf6;
+
+  /* brand */
   --color-primary: #7c3aed;
   --color-primary-hover: #6d28d9;
   --color-primary-foreground: #ffffff;
   --color-primary-soft: rgb(124 58 237 / 0.14);
+  --color-violet-text: #c4b5fd;
   --color-secondary: #06b6d4;
   --color-secondary-soft: rgb(6 182 212 / 0.12);
+  --color-cyan-text: #67e8f9;
 
+  /* status (reserved; always paired with an icon + label) */
   --color-success: #22c55e;
   --color-success-soft: rgb(34 197 94 / 0.12);
   --color-warning: #f59e0b;
@@ -34,26 +44,60 @@
   --color-neutral: #64748b;
   --color-neutral-soft: rgb(100 116 139 / 0.16);
 
-  /* Charts: single series uses the brand violet (validated ≥3:1 on card surface). */
-  --color-chart-1: #7c3aed;
-  --color-chart-grid: #262a33;
-  --color-chart-axis: #343a46;
+  /* charts (validated: single series ≥ 3:1 on card surfaces; heatmap ramp passes ordinal checks) */
+  --color-chart-1: #8b5cf6;
+  --color-chart-grid: rgb(255 255 255 / 0.06);
+  --color-chart-axis: rgb(255 255 255 / 0.12);
+  --color-heat-1: #4d3da6;
+  --color-heat-2: #6c50d6;
+  --color-heat-3: #8c6af2;
+  --color-heat-4: #ae93fa;
+  --color-heat-5: #d2c6fd;
 
   --font-sans: var(--font-geist-sans), system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-serif: var(--font-instrument-serif), Georgia, 'Times New Roman', serif;
 
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
+  --radius-2xl: 20px;
 
-  --animate-fade-in: fade-in 160ms ease-out;
-  --animate-pulse-soft: pulse-soft 1.6s ease-in-out infinite;
+  --shadow-card: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 1px 2px rgb(0 0 0 / 0.35), 0 8px 24px -12px rgb(0 0 0 / 0.5);
+  --shadow-pop: 0 0 0 1px rgb(255 255 255 / 0.08), 0 24px 48px -12px rgb(0 0 0 / 0.65);
+  --shadow-glow: 0 0 0 1px rgb(139 92 246 / 0.35), 0 12px 40px -12px rgb(124 58 237 / 0.55);
 
+  --animate-enter: enter 380ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-fade-in: fade-in 180ms ease-out both;
+  --animate-pop-in: pop-in 170ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-pulse-soft: pulse-soft 1.8s ease-in-out infinite;
+  --animate-ping-slow: ping-slow 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-stripes: stripes 1s linear infinite;
+
+  @keyframes enter {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
   @keyframes fade-in {
     from {
       opacity: 0;
-      transform: translateY(2px);
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
     }
     to {
       opacity: 1;
@@ -69,6 +113,33 @@
       opacity: 0.45;
     }
   }
+  @keyframes ping-slow {
+    0% {
+      transform: scale(1);
+      opacity: 0.7;
+    }
+    80%,
+    100% {
+      transform: scale(2.6);
+      opacity: 0;
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: -400px 0;
+    }
+    to {
+      background-position: 400px 0;
+    }
+  }
+  @keyframes stripes {
+    from {
+      background-position: 0 0;
+    }
+    to {
+      background-position: 28px 0;
+    }
+  }
 }
 
 @layer base {
@@ -82,6 +153,7 @@
   }
   body {
     font-family: var(--font-sans);
+    font-feature-settings: 'ss01', 'cv11';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -89,7 +161,7 @@
     border-color: var(--color-border);
   }
   ::selection {
-    background: rgb(124 58 237 / 0.4);
+    background: rgb(124 58 237 / 0.45);
   }
   :focus-visible {
     outline: 2px solid var(--color-ring);
@@ -105,9 +177,12 @@
     height: 10px;
   }
   ::-webkit-scrollbar-thumb {
-    background: var(--color-border-strong);
+    background: rgb(255 255 255 / 0.1);
     border-radius: 999px;
     border: 2px solid var(--color-background);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(255 255 255 / 0.18);
   }
   ::-webkit-scrollbar-track {
     background: transparent;
@@ -117,11 +192,85 @@
     *::before,
     *::after {
       animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
   }
 }
 
+/* Numbers that must align (tables, axis ticks). Big standalone values stay proportional. */
 @utility tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* Card surface: a quiet top light and soft depth instead of a heavy box. */
+@utility surface {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.022), rgb(255 255 255 / 0) 42%),
+    var(--color-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* 1px gradient border for featured surfaces. */
+@utility border-gradient {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--color-card), var(--color-card)) padding-box,
+    linear-gradient(135deg, rgb(167 139 250 / 0.55), rgb(255 255 255 / 0.06) 40%, rgb(34 211 238 / 0.45)) border-box;
+}
+
+@utility bg-brand {
+  background-image: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 45%, #0891b2 100%);
+}
+
+@utility text-brand {
+  background-image: linear-gradient(100deg, #c4b5fd 0%, #a78bfa 35%, #67e8f9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Fine dotted grid used behind hero areas. */
+@utility bg-dot-grid {
+  background-image: radial-gradient(rgb(255 255 255 / 0.075) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+@utility mask-fade-b {
+  mask-image: linear-gradient(to bottom, black 30%, transparent);
+}
+
+@utility mask-radial {
+  mask-image: radial-gradient(ellipse at 50% 0%, black 25%, transparent 70%);
+}
+
+@utility skeleton {
+  background: linear-gradient(90deg, rgb(255 255 255 / 0.035) 0%, rgb(255 255 255 / 0.08) 50%, rgb(255 255 255 / 0.035) 100%);
+  background-size: 800px 100%;
+  animation: var(--animate-shimmer);
+}
+
+@utility progress-stripes {
+  background-image: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0.18) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgb(255 255 255 / 0.18) 50%,
+    rgb(255 255 255 / 0.18) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 28px 28px;
+  animation: var(--animate-stripes);
+}
+
+/* Eyebrow / instrument label: mono, small, tracked. */
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-subtle-foreground);
 }

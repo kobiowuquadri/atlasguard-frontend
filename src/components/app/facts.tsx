@@ -20,17 +20,17 @@ function factDetail(fact: ExpectedFact, language?: string): string | null {
 export function FactList({ facts, language }: { facts: ExpectedFact[]; language?: string }) {
   if (facts.length === 0) return <p className="text-sm text-muted-foreground">No reference facts for this case.</p>;
   return (
-    <ul className="flex flex-col gap-2">
+    <ul className="flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border bg-inset">
       {facts.map((fact) => (
-        <li key={fact.id} className="rounded-md border border-border bg-background-subtle px-3 py-2">
+        <li key={fact.id} className="px-3.5 py-2.5">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="font-mono">
               {fact.type}
             </Badge>
             {!fact.required && <Badge variant="outline">optional</Badge>}
-            <span className="text-sm">{fact.description}</span>
+            <span className="text-[13px]">{fact.description}</span>
           </div>
-          {factDetail(fact, language) && <p className="mt-1 text-xs text-muted-foreground">{factDetail(fact, language)}</p>}
+          {factDetail(fact, language) && <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{factDetail(fact, language)}</p>}
         </li>
       ))}
     </ul>
@@ -56,7 +56,7 @@ export function ProvenanceList({ provenance }: { provenance: Provenance }) {
     ['Notes', provenance.notes],
   ];
   return (
-    <dl className="grid gap-x-4 gap-y-1.5 text-sm sm:grid-cols-[9rem_1fr]">
+    <dl className="grid gap-x-4 gap-y-2 text-[13px] sm:grid-cols-[9rem_1fr]">
       {rows
         .filter(([, v]) => v)
         .map(([k, v]) => (

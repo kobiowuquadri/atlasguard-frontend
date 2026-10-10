@@ -1,17 +1,16 @@
 'use client';
 
-import { BookOpen, Lock, Play, Search, ShieldCheck, Upload } from 'lucide-react';
+import { ArrowRight, BookOpen, Lock, Play, Search, ShieldCheck, Upload } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 import { CATEGORY_OPTIONS, FilterSelect, LANGUAGE_OPTIONS } from '@/components/app/filters';
 import { EmptyState, ErrorState, LoadingRows, PageHeader } from '@/components/app/page';
-import { LanguageBadge } from '@/components/app/status';
+import { Meter } from '@/components/app/viz';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/form-controls';
 import { useBenchmarks } from '@/lib/api/hooks';
-import { categoryLabel } from '@/lib/constants';
+import { categoryLabel, LANGUAGES } from '@/lib/constants';
 
 export default function BenchmarksPage() {
   const [search, setSearch] = React.useState('');
@@ -34,8 +33,8 @@ export default function BenchmarksPage() {
       />
 
       <div className="mb-5 flex flex-wrap gap-2">
-        <div className="relative w-full max-w-xs">
-          <Search className="pointer-events-none absolute top-2.5 left-3 size-4 text-subtle-foreground" aria-hidden />
+        <div className="relative w-full sm:max-w-xs">
+          <Search className="pointer-events-none absolute top-3 left-3 size-4 text-subtle-foreground" aria-hidden />
           <Input placeholder="Search suites" aria-label="Search suites" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
         <FilterSelect label="Language" value={language} onChange={setLanguage} options={LANGUAGE_OPTIONS} />
@@ -44,67 +43,67 @@ export default function BenchmarksPage() {
 
       {suites.isLoading && <LoadingRows />}
       {suites.error && <ErrorState error={suites.error} onRetry={() => void suites.refetch()} />}
-      {suites.data?.items.length === 0 && (
-        <EmptyState icon={BookOpen} title="No benchmark suites match" description="Try other filters, or import your own dataset." />
-      )}
+      {suites.data?.items.length === 0 && <EmptyState icon={BookOpen} title="No benchmark suites match" description="Try other filters, or import your own dataset." />}
 
       <div className="grid gap-4 lg:grid-cols-2">
         {suites.data?.items.map((s) => {
-          const verifiedPct = s.stats.caseCount ? (s.stats.verifiedCount / s.stats.caseCount) * 100 : 0;
+          const verified = s.stats.caseCount ? s.stats.verifiedCount / s.stats.caseCount : 0;
+          const maxLang = Math.max(1, ...Object.values(s.stats.languages));
           return (
-            <Card key={s.id} className="flex flex-col p-5">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <Link href={`/benchmarks/${s.id}`} className="text-base font-semibold hover:underline underline-offset-4">
+            <article key={s.id} className="surface flex flex-col rounded-xl border border-border p-6">
+              <div className="flex items-start gap-3.5">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(180deg,rgb(139_92_246/0.22),rgb(139_92_246/0.06))] inset-ring inset-ring-violet-400/25">
+                  <BookOpen className="size-[18px] text-violet-200" aria-hidden />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <Link href={`/benchmarks/${s.id}`} className="text-base font-semibold tracking-tight underline-offset-4 hover:underline">
                     {s.name}
                   </Link>
-                  <div className="mt-0.5 font-mono text-xs text-subtle-foreground">
-                    {s.slug} · v{s.version}
+                  <div className="mt-0.5 truncate font-mono text-[11.5px] text-subtle-foreground">
+                    {s.namespace}/{s.slug} · v{s.version}
                   </div>
                 </div>
-                <div className="flex gap-1.5">
-                  {s.isOfficial ? (
-                    <Badge variant="primary">
-                      <ShieldCheck /> Official
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline">
-                      <Lock /> Private
-                    </Badge>
-                  )}
-                </div>
+                {s.isOfficial ? (
+                  <Badge variant="primary">
+                    <ShieldCheck /> Official
+                  </Badge>
+                ) : (
+                  <Badge variant="outline">
+                    <Lock /> Private
+                  </Badge>
+                )}
               </div>
-              {s.description && <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{s.description}</p>}
+              {s.description && <p className="mt-4 line-clamp-3 text-[13px] leading-relaxed text-muted-foreground">{s.description}</p>}
 
-              <dl className="mt-4 grid grid-cols-3 gap-3 text-sm">
+              <div className="mt-5 grid gap-5 sm:grid-cols-2">
                 <div>
-                  <dt className="text-xs text-muted-foreground">Cases</dt>
-                  <dd className="font-semibold tabular">{s.stats.caseCount}</dd>
+                  <div className="eyebrow mb-2.5">Cases by language</div>
+                  <ul className="flex flex-col gap-1.5">
+                    {LANGUAGES.filter((l) => s.stats.languages[l.code]).map((l) => (
+                      <li key={l.code} className="grid grid-cols-[1.75rem_minmax(0,1fr)_1.75rem] items-center gap-2 text-xs">
+                        <span className="font-mono text-[10.5px] text-slate-300">{l.short}</span>
+                        <span className="h-1.5 rounded-full bg-white/[0.06]">
+                          <span className="block h-full rounded-full bg-[#8b5cf6]" style={{ width: `${(s.stats.languages[l.code]! / maxLang) * 100}%` }} />
+                        </span>
+                        <span className="text-right text-muted-foreground tabular">{s.stats.languages[l.code]}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">Semantic groups</dt>
-                  <dd className="font-semibold tabular">{s.stats.semanticGroupCount}</dd>
+                <div className="flex flex-col">
+                  <div className="eyebrow mb-2.5">Human review</div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-xl font-semibold">{s.stats.verifiedCount}</span>
+                    <span className="text-xs text-muted-foreground">of {s.stats.caseCount} verified</span>
+                  </div>
+                  <Meter value={verified} label="Share of cases verified by a fluent reviewer" className="mt-2" />
+                  <p className="mt-2 text-xs text-subtle-foreground">
+                    {s.stats.unreviewedCount} case{s.stats.unreviewedCount === 1 ? '' : 's'} awaiting review · {s.stats.semanticGroupCount} semantic groups
+                  </p>
                 </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">Verified</dt>
-                  <dd className="font-semibold tabular">
-                    {s.stats.verifiedCount}/{s.stats.caseCount}
-                  </dd>
-                </div>
-              </dl>
-              <div className="mt-2 h-1.5 rounded-full bg-elevated" aria-hidden>
-                <div className="h-full rounded-full bg-success" style={{ width: `${verifiedPct}%` }} />
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {s.stats.unreviewedCount} case{s.stats.unreviewedCount === 1 ? '' : 's'} awaiting human review
-              </p>
 
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {Object.entries(s.stats.languages).map(([code, n]) => (
-                  <LanguageBadge key={code} code={code} count={n} />
-                ))}
-              </div>
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <div className="mt-5 flex flex-wrap gap-1.5">
                 {Object.keys(s.stats.categories).map((c) => (
                   <Badge key={c} variant="neutral">
                     {categoryLabel(c)}
@@ -112,19 +111,19 @@ export default function BenchmarksPage() {
                 ))}
               </div>
 
-              <div className="mt-5 flex gap-2 pt-1">
+              <div className="mt-6 flex gap-2 border-t border-border pt-4">
                 <Button asChild variant="secondary" size="sm">
                   <Link href={`/benchmarks/${s.id}`}>
-                    <BookOpen /> Inspect cases
+                    Inspect cases <ArrowRight />
                   </Link>
                 </Button>
-                <Button asChild size="sm">
+                <Button asChild size="sm" className="ml-auto">
                   <Link href={`/evaluations/new?suiteId=${s.id}`}>
                     <Play /> Run
                   </Link>
                 </Button>
               </div>
-            </Card>
+            </article>
           );
         })}
       </div>

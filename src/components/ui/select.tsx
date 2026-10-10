@@ -1,7 +1,7 @@
 'use client';
 
 import * as SelectPrimitive from '@radix-ui/react-select';
-import { Check, ChevronDown } from 'lucide-react';
+import { Check, ChevronsUpDown } from 'lucide-react';
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
@@ -12,14 +12,14 @@ export function SelectTrigger({ className, children, ...props }: React.Component
   return (
     <SelectPrimitive.Trigger
       className={cn(
-        'flex h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-input bg-background-subtle px-3 text-sm text-foreground data-[placeholder]:text-subtle-foreground focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50 [&>span]:truncate',
+        'flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-input bg-inset px-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgb(0_0_0/0.3)] outline-hidden transition-[border-color,box-shadow] hover:border-white/15 focus-visible:border-violet-400/80 focus-visible:ring-4 focus-visible:ring-violet-500/15 disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-subtle-foreground [&>span]:truncate',
         className,
       )}
       {...props}
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+        <ChevronsUpDown className="size-3.5 shrink-0 text-subtle-foreground" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   );
@@ -30,14 +30,14 @@ export function SelectContent({ className, children, position = 'popper', ...pro
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
         position={position}
-        sideOffset={4}
+        sideOffset={6}
         className={cn(
-          'z-50 max-h-80 min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-md border border-border-strong bg-elevated shadow-xl shadow-black/40 animate-fade-in',
+          'z-50 max-h-80 min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-xl border border-white/10 bg-[#171a21]/95 shadow-pop backdrop-blur-xl animate-pop-in',
           className,
         )}
         {...props}
       >
-        <SelectPrimitive.Viewport className="p-1">{children}</SelectPrimitive.Viewport>
+        <SelectPrimitive.Viewport className="p-1.5">{children}</SelectPrimitive.Viewport>
       </SelectPrimitive.Content>
     </SelectPrimitive.Portal>
   );
@@ -47,14 +47,14 @@ export function SelectItem({ className, children, ...props }: React.ComponentPro
   return (
     <SelectPrimitive.Item
       className={cn(
-        'relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pr-8 pl-2 text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-card-hover',
+        'relative flex w-full cursor-pointer items-center rounded-md py-2 pr-8 pl-2.5 text-[13px] outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-white/[0.06] data-[state=checked]:text-foreground',
         className,
       )}
       {...props}
     >
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
-      <SelectPrimitive.ItemIndicator className="absolute right-2 flex items-center">
-        <Check className="size-4 text-primary" />
+      <SelectPrimitive.ItemIndicator className="absolute right-2.5 flex items-center">
+        <Check className="size-3.5 text-violet-300" />
       </SelectPrimitive.ItemIndicator>
     </SelectPrimitive.Item>
   );

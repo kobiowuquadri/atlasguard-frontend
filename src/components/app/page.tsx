@@ -10,21 +10,36 @@ export function PageHeader({
   description,
   actions,
   eyebrow,
+  meta,
 }: {
   title: React.ReactNode;
   description?: React.ReactNode;
   actions?: React.ReactNode;
+  /** Small mono label above the title. */
   eyebrow?: React.ReactNode;
+  /** A row of facts under the description (ids, timestamps, owners). */
+  meta?: React.ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <header className="mb-8 flex flex-col gap-5 animate-enter md:flex-row md:items-end md:justify-between">
       <div className="min-w-0">
-        {eyebrow && <div className="mb-1.5 text-xs text-muted-foreground">{eyebrow}</div>}
-        <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">{title}</h1>
-        {description && <p className="mt-1.5 max-w-3xl text-sm text-muted-foreground">{description}</p>}
+        {eyebrow && <div className="eyebrow mb-2.5 flex flex-wrap items-center gap-2">{eyebrow}</div>}
+        <h1 className="text-[26px] leading-8 font-semibold tracking-[-0.022em] text-balance text-foreground sm:text-[28px] sm:leading-9">{title}</h1>
+        {description && <p className="mt-2 max-w-2xl text-sm leading-relaxed text-pretty text-muted-foreground">{description}</p>}
+        {meta && <div className="mt-3.5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">{meta}</div>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
-    </div>
+    </header>
+  );
+}
+
+/** "label value" pair for PageHeader meta rows. */
+export function MetaItem({ icon: Icon, children }: { icon?: React.ComponentType<{ className?: string }>; children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {Icon && <Icon className="size-3.5 text-subtle-foreground" />}
+      {children}
+    </span>
   );
 }
 
@@ -42,21 +57,27 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div className={cn('flex flex-col items-center justify-center rounded-lg border border-dashed border-border-strong px-6 py-12 text-center', className)}>
-      <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-primary-soft">
-        <Icon className="size-5 text-violet-300" />
+    <div
+      className={cn(
+        'relative flex flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-border-strong px-6 py-14 text-center',
+        className,
+      )}
+    >
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-dot-grid opacity-60 mask-radial" />
+      <div className="relative mb-4 flex size-11 items-center justify-center rounded-xl bg-[linear-gradient(180deg,rgb(139_92_246/0.22),rgb(139_92_246/0.06))] inset-ring inset-ring-violet-400/25">
+        <Icon className="size-5 text-violet-200" />
       </div>
-      <h3 className="text-sm font-semibold">{title}</h3>
-      {description && <p className="mt-1 max-w-md text-sm text-muted-foreground">{description}</p>}
-      {action && <div className="mt-4">{action}</div>}
+      <h3 className="relative text-[15px] font-semibold tracking-tight">{title}</h3>
+      {description && <p className="relative mt-1.5 max-w-md text-sm leading-relaxed text-muted-foreground">{description}</p>}
+      {action && <div className="relative mt-5 flex flex-wrap justify-center gap-2">{action}</div>}
     </div>
   );
 }
 
 export function ErrorState({ error, onRetry, className }: { error: unknown; onRetry?: () => void; className?: string }) {
   return (
-    <div role="alert" className={cn('flex flex-col items-center justify-center rounded-lg border border-danger/30 bg-danger-soft px-6 py-10 text-center', className)}>
-      <CircleAlert className="mb-2 size-6 text-red-300" />
+    <div role="alert" className={cn('flex flex-col items-center justify-center rounded-xl border border-red-400/20 bg-danger-soft/60 px-6 py-10 text-center', className)}>
+      <CircleAlert className="mb-2.5 size-6 text-red-300" />
       <p className="text-sm font-medium">Couldn’t load this data</p>
       <p className="mt-1 max-w-md text-sm text-muted-foreground">{errorMessage(error)}</p>
       {onRetry && (
@@ -72,43 +93,8 @@ export function LoadingRows({ rows = 4, className }: { rows?: number; className?
   return (
     <div className={cn('flex flex-col gap-2', className)} aria-label="Loading">
       {Array.from({ length: rows }, (_, i) => (
-        <Skeleton key={i} className="h-12 w-full" />
+        <Skeleton key={i} className="h-14 w-full rounded-lg" />
       ))}
-    </div>
-  );
-}
-
-export function StatTile({
-  label,
-  value,
-  hint,
-  icon: Icon,
-  tone = 'default',
-}: {
-  label: string;
-  value: React.ReactNode;
-  hint?: React.ReactNode;
-  icon?: React.ComponentType<{ className?: string }>;
-  tone?: 'default' | 'success' | 'warning' | 'danger';
-}) {
-  const toneClass = { default: 'text-muted-foreground', success: 'text-success', warning: 'text-warning', danger: 'text-danger' }[tone];
-  return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium text-muted-foreground">{label}</span>
-        {Icon && <Icon className={cn('size-4', toneClass)} />}
-      </div>
-      <div className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{value}</div>
-      {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}
-    </div>
-  );
-}
-
-export function SectionTitle({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
-  return (
-    <div className="mb-3 flex items-center justify-between gap-2">
-      <h2 className="text-sm font-semibold text-foreground">{children}</h2>
-      {action}
     </div>
   );
 }

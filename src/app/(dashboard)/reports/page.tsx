@@ -1,31 +1,31 @@
 'use client';
 
-import { ArrowDownRight, ArrowUpRight, Download, FileCheck2, FileText, Minus } from 'lucide-react';
+import { ArrowDownRight, ArrowRight, ArrowUpRight, Download, FileCheck2, FileText, FlaskConical, Minus } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import * as React from 'react';
 import { toast } from 'sonner';
-import { EmptyState, ErrorState, LoadingRows, PageHeader, StatTile } from '@/components/app/page';
-import { SimulatedBadge, VerdictBadge } from '@/components/app/status';
+import { EmptyState, ErrorState, LoadingRows, PageHeader } from '@/components/app/page';
+import { LanguageChip, SimulatedBadge, VerdictBadge } from '@/components/app/status';
+import { VerdictBar } from '@/components/app/viz';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, Td, Th } from '@/components/ui/misc';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/overlays';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api, downloadFile, errorMessage, saveJson } from '@/lib/api/client';
 import { useCompare, useReport, useRuns } from '@/lib/api/hooks';
 import type { CompareRow, Run } from '@/lib/api/types';
-import { languageName } from '@/lib/constants';
 import { cn, formatDateTime, formatMs, formatPercent, shortId } from '@/lib/utils';
 
 function runLabel(r: Run) {
   return `${r.suite.name} #${shortId(r.id)} · ${new Date(r.createdAt).toLocaleDateString('en-NG')}${r.isSimulated ? ' · simulated' : ''}`;
 }
 
-function RunPicker({ runs, value, onChange, label }: { runs: Run[]; value?: string; onChange: (v: string) => void; label: string }) {
+function RunPicker({ runs, value, onChange, label, className }: { runs: Run[]; value?: string; onChange: (v: string) => void; label: string; className?: string }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger aria-label={label} className="max-w-md">
+      <SelectTrigger aria-label={label} className={cn('max-w-md', className)}>
         <SelectValue placeholder={label} />
       </SelectTrigger>
       <SelectContent>
@@ -59,26 +59,38 @@ function Delta({ value, kind }: { value: number | null; kind: 'rate' | 'ms' }) {
   );
 }
 
+/** Inline magnitude bar for table rows (single hue, 0–100%). */
+function RateCell({ rate }: { rate: number | null }) {
+  return (
+    <span className="flex items-center justify-end gap-3">
+      <span className="hidden h-1.5 w-20 rounded-full bg-white/[0.06] sm:block" aria-hidden>
+        {rate !== null && <span className="block h-full rounded-full bg-[#8b5cf6]" style={{ width: `${Math.max(rate * 100, 2)}%` }} />}
+      </span>
+      <span className="w-14 text-right font-medium tabular">{formatPercent(rate)}</span>
+    </span>
+  );
+}
+
 function CompareTable({ rows, title }: { rows: CompareRow[]; title: string }) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-2">
         <Table>
           <thead>
             <tr>
               <Th />
-              <Th className="text-right">Base pass rate</Th>
-              <Th className="text-right">Target pass rate</Th>
+              <Th className="text-right">Base</Th>
+              <Th className="text-right">Target</Th>
               <Th className="text-right">Change</Th>
-              <Th className="text-right">Latency change</Th>
+              <Th className="text-right">Latency</Th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.key}>
+              <tr key={r.key} className="hover:bg-white/[0.02]">
                 <Td>{r.label}</Td>
                 <Td className="text-right tabular">{formatPercent(r.base?.verifiedPassRate ?? null)}</Td>
                 <Td className="text-right tabular">{formatPercent(r.target?.verifiedPassRate ?? null)}</Td>
@@ -125,21 +137,41 @@ function ReportPanel({ runId }: { runId: string }) {
     }
   };
 
+  const s = r.summary;
+  const metrics: Array<[string, React.ReactNode, string?]> = [
+    ['Passed / failed', `${s.passed} / ${s.failed}`],
+    ['Needs review', s.needsReview, 'Routed to a fluent reviewer'],
+    ['Errors / skipped', `${s.errors} / ${s.skipped}`, 'Technical — not failures'],
+    ['Avg latency', formatMs(s.averageLatencyMs), `median ${formatMs(s.medianLatencyMs)}`],
+    ['Contradictions', r.consistency.confirmedContradictions, `${r.consistency.groupsCompared} groups compared`],
+  ];
+
   return (
     <div className="flex flex-col gap-4">
       {r.simulated && (
-        <p className="rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-amber-100">{r.simulationNotice}</p>
+        <div className="flex items-start gap-3 rounded-xl border border-amber-400/20 bg-warning-soft px-4 py-3 text-sm text-amber-100/90">
+          <FlaskConical className="mt-0.5 size-4 shrink-0 text-amber-300" aria-hidden />
+          <p>{r.simulationNotice}</p>
+        </div>
       )}
-      <Card>
-        <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-5">
-          <div>
-            <div className="flex flex-wrap items-center gap-2 font-semibold">
-              {r.overview.benchmark.name} v{r.overview.benchmark.version}
+
+      {/* Report "document" */}
+      <Card className="overflow-hidden">
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border px-6 py-5">
+          <div className="min-w-0">
+            <div className="eyebrow">Evaluation report</div>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-lg font-semibold tracking-tight">
+              {r.overview.benchmark.name} <span className="font-mono text-sm font-normal text-subtle-foreground">v{r.overview.benchmark.version}</span>
               {r.simulated && <SimulatedBadge />}
             </div>
-            <div className="text-xs text-muted-foreground">
-              {r.overview.project.name} · <span className="font-mono">{r.overview.model.modelIdentifier}</span> · completed{' '}
-              {formatDateTime(r.overview.run.completedAt)}
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+              <span>{r.overview.project.name}</span>
+              <span aria-hidden>·</span>
+              <span className="font-mono">{r.overview.model.modelIdentifier}</span>
+              <span aria-hidden>·</span>
+              <span>completed {formatDateTime(r.overview.run.completedAt)}</span>
+              <span aria-hidden>·</span>
+              <span className="font-mono">#{shortId(r.overview.run.id)}</span>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -152,38 +184,69 @@ function ReportPanel({ runId }: { runId: string }) {
               <FileCheck2 /> N-ATLaS evidence
             </Button>
           </div>
-        </CardContent>
+        </div>
+
+        <div className="grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <div className="border-b border-border p-6 lg:border-r lg:border-b-0">
+            <div className="eyebrow">Verified pass rate</div>
+            <div className="mt-3 text-[48px] leading-none font-semibold tracking-[-0.04em]">{formatPercent(s.verifiedPassRate)}</div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {s.passed + s.failed} decided of {s.total} cases · {s.humanReviewed} human-reviewed
+            </p>
+            <VerdictBar
+              counts={{ PASSED: s.passed, FAILED: s.failed, NEEDS_REVIEW: s.needsReview, ERROR: s.errors, SKIPPED: s.skipped }}
+              pending={s.pending}
+              size="lg"
+              legendColumns={2}
+              className="mt-6"
+            />
+          </div>
+          <dl className="grid auto-rows-fr grid-cols-2 gap-px bg-border sm:grid-cols-3">
+            {metrics.map(([label, value, hint]) => (
+              <div key={label} className="bg-card px-5 py-4">
+                <dt className="eyebrow">{label}</dt>
+                <dd className="mt-2 text-xl leading-none font-semibold">{value}</dd>
+                {hint && <dd className="mt-1.5 text-[11px] text-subtle-foreground">{hint}</dd>}
+              </div>
+            ))}
+            <div className="bg-card px-5 py-4">
+              <dt className="eyebrow">Languages</dt>
+              <dd className="mt-2 flex flex-wrap gap-1">
+                {r.overview.languages.map((l) => (
+                  <LanguageChip key={l} code={l} compact />
+                ))}
+              </dd>
+            </div>
+          </dl>
+        </div>
       </Card>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
-        <StatTile label="Verified pass rate" value={formatPercent(r.summary.verifiedPassRate)} />
-        <StatTile label="Passed / failed" value={`${r.summary.passed} / ${r.summary.failed}`} />
-        <StatTile label="Needs review" value={r.summary.needsReview} />
-        <StatTile label="Errors / skipped" value={`${r.summary.errors} / ${r.summary.skipped}`} />
-        <StatTile label="Avg latency" value={formatMs(r.summary.averageLatencyMs)} />
-        <StatTile label="Contradictions" value={r.consistency.confirmedContradictions} hint={`${r.consistency.groupsCompared} groups`} />
-      </div>
+
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Language performance</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-2">
             <Table>
               <thead>
                 <tr>
                   <Th>Language</Th>
                   <Th className="text-right">Cases</Th>
                   <Th className="text-right">Pass rate</Th>
-                  <Th className="text-right">Avg latency</Th>
+                  <Th className="text-right">Latency</Th>
                 </tr>
               </thead>
               <tbody>
                 {r.languagePerformance.map((l) => (
-                  <tr key={l.language}>
-                    <Td>{l.name}</Td>
+                  <tr key={l.language} className="hover:bg-white/[0.02]">
+                    <Td>
+                      <LanguageChip code={l.language} />
+                    </Td>
                     <Td className="text-right tabular">{l.total}</Td>
-                    <Td className="text-right tabular">{formatPercent(l.verifiedPassRate)}</Td>
-                    <Td className="text-right tabular">{formatMs(l.averageLatencyMs)}</Td>
+                    <Td>
+                      <RateCell rate={l.verifiedPassRate} />
+                    </Td>
+                    <Td className="text-right font-mono text-xs text-muted-foreground">{formatMs(l.averageLatencyMs)}</Td>
                   </tr>
                 ))}
               </tbody>
@@ -194,7 +257,7 @@ function ReportPanel({ runId }: { runId: string }) {
           <CardHeader>
             <CardTitle>Category performance</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-2">
             <Table>
               <thead>
                 <tr>
@@ -205,10 +268,12 @@ function ReportPanel({ runId }: { runId: string }) {
               </thead>
               <tbody>
                 {r.categoryPerformance.map((c) => (
-                  <tr key={c.category}>
+                  <tr key={c.category} className="hover:bg-white/[0.02]">
                     <Td>{c.label}</Td>
                     <Td className="text-right tabular">{c.total}</Td>
-                    <Td className="text-right tabular">{formatPercent(c.verifiedPassRate)}</Td>
+                    <Td>
+                      <RateCell rate={c.verifiedPassRate} />
+                    </Td>
                   </tr>
                 ))}
               </tbody>
@@ -216,25 +281,38 @@ function ReportPanel({ runId }: { runId: string }) {
           </CardContent>
         </Card>
       </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Methodology & limitations</CardTitle>
+          <CardDescription>How every number in this report was produced.</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
-          {Object.entries(r.methodology).map(([k, v]) => (
-            <p key={k}>
-              <strong className="text-foreground capitalize">{k.replace(/([A-Z])/g, ' $1')}:</strong> {v}
-            </p>
-          ))}
-          <ul className="list-disc pl-5">
-            {r.limitations.map((l) => (
-              <li key={l}>{l}</li>
+        <CardContent className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+          <dl className="flex flex-col gap-3 text-[13px]">
+            {Object.entries(r.methodology).map(([k, v]) => (
+              <div key={k} className="grid gap-1 sm:grid-cols-[10rem_1fr] sm:gap-4">
+                <dt className="font-medium text-foreground capitalize">{k.replace(/([A-Z])/g, ' $1')}</dt>
+                <dd className="leading-relaxed text-muted-foreground">{v}</dd>
+              </div>
             ))}
-          </ul>
+          </dl>
+          <div className="rounded-xl border border-border bg-inset p-4">
+            <div className="eyebrow mb-2.5">Limitations</div>
+            <ul className="flex list-disc flex-col gap-1.5 pl-4 text-[13px] leading-relaxed text-muted-foreground">
+              {r.limitations.map((l) => (
+                <li key={l}>{l}</li>
+              ))}
+            </ul>
+          </div>
         </CardContent>
+        <p className="border-t border-border px-5 py-3 text-[11px] text-subtle-foreground">{r.attribution}</p>
       </Card>
       <p className="text-xs text-muted-foreground">
-        Full per-case findings are in the <Link href={`/evaluations/${runId}`} className="text-violet-300 hover:underline">run details</Link> and the exports.
+        Full per-case findings are in the{' '}
+        <Link href={`/evaluations/${runId}`} className="inline-flex items-center gap-1 text-violet-300 hover:underline">
+          run details <ArrowRight className="size-3" />
+        </Link>{' '}
+        and the exports.
       </p>
     </div>
   );
@@ -249,34 +327,51 @@ function ComparePanel({ runs, initialBase }: { runs: Run[]; initialBase?: string
 
   return (
     <div className="flex flex-col gap-4">
-      <Card>
-        <CardContent className="grid gap-3 pt-5 md:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-muted-foreground">Base run</span>
-            <RunPicker runs={runs} value={base} onChange={(v) => { setBase(v); setTarget(undefined); }} label="Select base run" />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-muted-foreground">Target run (same benchmark suite)</span>
-            <RunPicker runs={compatible} value={target} onChange={setTarget} label={base ? 'Select target run' : 'Select a base run first'} />
-          </div>
-        </CardContent>
+      <Card className="grid gap-4 p-5 md:grid-cols-[1fr_auto_1fr] md:items-end">
+        <div className="flex flex-col gap-2">
+          <span className="eyebrow">Base run</span>
+          <RunPicker
+            runs={runs}
+            value={base}
+            onChange={(v) => {
+              setBase(v);
+              setTarget(undefined);
+            }}
+            label="Select base run"
+            className="max-w-none"
+          />
+        </div>
+        <ArrowRight className="mx-auto hidden size-4 text-subtle-foreground md:mb-3 md:block" aria-hidden />
+        <div className="flex flex-col gap-2">
+          <span className="eyebrow">Target run · same benchmark suite</span>
+          <RunPicker runs={compatible} value={target} onChange={setTarget} label={base ? 'Select target run' : 'Select a base run first'} className="max-w-none" />
+        </div>
       </Card>
       {compare.isLoading && <LoadingRows />}
       {compare.error && <ErrorState error={compare.error} />}
       {compare.data && (
         <>
           {compare.data.warnings.length > 0 && (
-            <ul className="rounded-md border border-warning/30 bg-warning-soft px-4 py-2 text-sm text-amber-100">
+            <ul className="rounded-xl border border-amber-400/20 bg-warning-soft px-4 py-3 text-sm text-amber-100">
               {compare.data.warnings.map((w) => (
                 <li key={w}>{w}</li>
               ))}
             </ul>
           )}
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <StatTile label="Base pass rate" value={formatPercent(compare.data.base.overall.verifiedPassRate)} />
-            <StatTile label="Target pass rate" value={formatPercent(compare.data.target.overall.verifiedPassRate)} />
-            <StatTile label="Change" value={<Delta value={compare.data.overall.passRateDelta} kind="rate" />} />
-            <StatTile label="Cases compared" value={compare.data.casesCompared} hint={`${compare.data.caseChanges.length} changed verdict`} />
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border shadow-card md:grid-cols-4">
+            {(
+              [
+                ['Base pass rate', formatPercent(compare.data.base.overall.verifiedPassRate)],
+                ['Target pass rate', formatPercent(compare.data.target.overall.verifiedPassRate)],
+                ['Change', <Delta key="d" value={compare.data.overall.passRateDelta} kind="rate" />],
+                ['Cases compared', `${compare.data.casesCompared}`],
+              ] as const
+            ).map(([label, value]) => (
+              <div key={label} className="bg-card px-5 py-4">
+                <div className="eyebrow">{label}</div>
+                <div className="mt-2 text-xl leading-none font-semibold">{value}</div>
+              </div>
+            ))}
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
             <CompareTable rows={compare.data.byLanguage} title="By language" />
@@ -285,10 +380,11 @@ function ComparePanel({ runs, initialBase }: { runs: Run[]; initialBase?: string
           <Card>
             <CardHeader>
               <CardTitle>Verdict changes</CardTitle>
+              <CardDescription>{compare.data.caseChanges.length} case(s) changed their final verdict</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-2">
               {compare.data.caseChanges.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No case changed its final verdict.</p>
+                <p className="px-3 pb-2 text-sm text-muted-foreground">No case changed its final verdict.</p>
               ) : (
                 <Table>
                   <thead>
@@ -302,12 +398,18 @@ function ComparePanel({ runs, initialBase }: { runs: Run[]; initialBase?: string
                   </thead>
                   <tbody>
                     {compare.data.caseChanges.map((c) => (
-                      <tr key={c.caseKey}>
+                      <tr key={`${c.caseKey}-${c.language}`} className="hover:bg-white/[0.02]">
                         <Td className="font-mono text-xs">{c.caseKey}</Td>
-                        <Td>{languageName(c.language)}</Td>
-                        <Td><VerdictBadge verdict={c.base} /></Td>
-                        <Td><VerdictBadge verdict={c.target} /></Td>
-                        <Td className="capitalize">{c.direction}</Td>
+                        <Td>
+                          <LanguageChip code={c.language} compact />
+                        </Td>
+                        <Td>
+                          <VerdictBadge verdict={c.base} />
+                        </Td>
+                        <Td>
+                          <VerdictBadge verdict={c.target} />
+                        </Td>
+                        <Td className="text-[13px] capitalize">{c.direction}</Td>
                       </tr>
                     ))}
                   </tbody>
@@ -340,15 +442,15 @@ function ReportsContent() {
       />
       {runs.isLoading && <LoadingRows />}
       {runs.error && <ErrorState error={runs.error} onRetry={() => void runs.refetch()} />}
-      {runs.data && finished.length === 0 && (
-        <EmptyState icon={FileText} title="No finished runs yet" description="Reports appear once an evaluation run has completed." />
-      )}
+      {runs.data && finished.length === 0 && <EmptyState icon={FileText} title="No finished runs yet" description="Reports appear once an evaluation run has completed." />}
       {finished.length > 0 && (
         <Tabs defaultValue={initialBase ? 'compare' : 'report'}>
-          <TabsList>
-            <TabsTrigger value="report">Run report</TabsTrigger>
-            <TabsTrigger value="compare">Compare runs</TabsTrigger>
-          </TabsList>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <TabsList variant="pill">
+              <TabsTrigger value="report">Run report</TabsTrigger>
+              <TabsTrigger value="compare">Compare runs</TabsTrigger>
+            </TabsList>
+          </div>
           <TabsContent value="report">
             <div className="mb-4">
               <RunPicker runs={finished} value={selected} onChange={setSelected} label="Select a run" />

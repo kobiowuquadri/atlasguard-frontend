@@ -59,5 +59,7 @@ export function shortId(id: string): string {
 
 export function durationBetween(start?: string | null, end?: string | null): number | null {
   if (!start || !end) return null;
-  return new Date(end).getTime() - new Date(start).getTime();
+  const ms = new Date(end).getTime() - new Date(start).getTime();
+  // A negative span can only come from inconsistent timestamps; show "—" rather than nonsense.
+  return ms >= 0 ? ms : null;
 }

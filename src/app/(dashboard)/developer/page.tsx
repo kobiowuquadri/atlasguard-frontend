@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { EmptyState, PageHeader } from '@/components/app/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, Input } from '@/components/ui/form-controls';
 import { CodeBlock, CopyButton, Table, Td, Th } from '@/components/ui/misc';
 import {
@@ -54,13 +54,13 @@ function CreateKeyDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
               <DialogTitle>Copy your API key now</DialogTitle>
               <DialogDescription>For your security this key is shown once. AtlasGuard stores only a hash of it.</DialogDescription>
             </DialogHeader>
-            <div className="flex items-center gap-2 rounded-md border border-border bg-background-subtle p-3">
-              <code className="min-w-0 flex-1 break-all text-sm">{secret}</code>
+            <div className="flex items-center gap-2 rounded-xl border border-violet-400/30 bg-primary-soft/50 p-3.5">
+              <code className="min-w-0 flex-1 font-mono text-[13px] break-all text-violet-100">{secret}</code>
               <CopyButton value={secret} />
             </div>
-            <p className="flex items-start gap-2 text-xs text-amber-200">
-              <TriangleAlert className="mt-0.5 size-3.5 shrink-0" /> Keep it server-side (environment variable). Never put it in browser
-              code or commit it to a repository.
+            <p className="flex items-start gap-2 text-xs leading-relaxed text-amber-200">
+              <TriangleAlert className="mt-0.5 size-3.5 shrink-0" /> Keep it server-side (environment variable). Never put it in browser code or commit
+              it to a repository.
             </p>
             <DialogFooter>
               <Button onClick={() => close(false)}>Done</Button>
@@ -99,10 +99,7 @@ function CreateKeyDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
                 disabled={name.trim().length < 2}
                 loading={create.isPending}
                 onClick={() =>
-                  create.mutate(
-                    { name: name.trim(), projectId: projectId === ANY_PROJECT ? undefined : projectId },
-                    { onSuccess: (res) => setSecret(res.key) },
-                  )
+                  create.mutate({ name: name.trim(), projectId: projectId === ANY_PROJECT ? undefined : projectId }, { onSuccess: (res) => setSecret(res.key) })
                 }
               >
                 Create key
@@ -171,6 +168,12 @@ console.log('queued run', body.data.id);`;
   return { sdk, curl, js };
 }
 
+const QUICKSTART = [
+  ['01', 'Create a key', 'Restrict it to one project and keep it in an environment variable.'],
+  ['02', 'Install the SDK', 'Typed client for Node.js 18+ and modern browsers — zero runtime dependencies.'],
+  ['03', 'Run from CI', 'Queue a run, wait for completion and fail the build on regressions.'],
+];
+
 export default function DeveloperPage() {
   const keys = useApiKeys();
   const revoke = useRevokeApiKey();
@@ -187,21 +190,35 @@ export default function DeveloperPage() {
         actions={
           <Button asChild variant="secondary">
             <a href="/api/docs" target="_blank" rel="noreferrer">
-              <BookOpen /> OpenAPI docs <ExternalLink />
+              <BookOpen /> OpenAPI docs <ExternalLink className="text-subtle-foreground" />
             </a>
           </Button>
         }
       />
       <CreateKeyDialog open={open} onOpenChange={setOpen} />
 
+      <ol className="mb-6 grid gap-px overflow-hidden rounded-xl border border-border bg-border shadow-card md:grid-cols-3">
+        {QUICKSTART.map(([n, title, body]) => (
+          <li key={n} className="bg-card px-5 py-4">
+            <span className="font-mono text-[11px] text-violet-300">{n}</span>
+            <div className="mt-1.5 text-sm font-medium">{title}</div>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{body}</p>
+          </li>
+        ))}
+      </ol>
+
       <Card className="mb-4">
-        <CardHeader className="flex-row items-center justify-between">
+        <CardHeader
+          action={
+            <Button size="sm" onClick={() => setOpen(true)}>
+              <Plus /> Create key
+            </Button>
+          }
+        >
           <CardTitle>API keys</CardTitle>
-          <Button size="sm" onClick={() => setOpen(true)}>
-            <Plus /> Create key
-          </Button>
+          <CardDescription>Keys are shown once at creation; AtlasGuard stores only a hash.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className={keys.data && keys.data.length > 0 ? 'px-2' : undefined}>
           {keys.data && keys.data.length === 0 ? (
             <EmptyState icon={KeyRound} title="No API keys yet" description="Create a key to call the API or SDK from your own code." />
           ) : (
@@ -218,9 +235,11 @@ export default function DeveloperPage() {
               </thead>
               <tbody>
                 {keys.data?.map((k) => (
-                  <tr key={k.id} className={k.revokedAt ? 'opacity-50' : undefined}>
+                  <tr key={k.id} className={k.revokedAt ? 'opacity-50' : 'hover:bg-white/[0.02]'}>
                     <Td className="font-medium">{k.name}</Td>
-                    <Td className="font-mono text-xs">{k.keyPrefix}…</Td>
+                    <Td>
+                      <code className="rounded-md bg-white/[0.05] px-1.5 py-0.5 font-mono text-xs text-slate-300 inset-ring inset-ring-white/10">{k.keyPrefix}…</code>
+                    </Td>
                     <Td className="text-muted-foreground">{k.project ? `Only ${k.project.name}` : 'All projects'}</Td>
                     <Td className="text-muted-foreground">{k.lastUsedAt ? formatRelative(k.lastUsedAt) : 'Never'}</Td>
                     <Td className="text-muted-foreground">{formatDateTime(k.createdAt)}</Td>
@@ -246,45 +265,51 @@ export default function DeveloperPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <Card>
           <CardHeader>
             <CardTitle>Examples</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Base URL: <code className="text-foreground">{baseUrl}</code> · responses are <code>{'{ success, data }'}</code> or{' '}
-              <code>{'{ success: false, error: { code, message, requestId } }'}</code>
-            </p>
+            <CardDescription>
+              Responses are <code className="font-mono text-slate-300">{'{ success, data }'}</code> or{' '}
+              <code className="font-mono text-slate-300">{'{ success: false, error: { code, message, requestId } }'}</code>
+            </CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="mb-4 flex items-center gap-2 rounded-lg bg-inset px-3 py-2 inset-ring inset-ring-white/[0.07]">
+              <span className="eyebrow shrink-0">Base URL</span>
+              <code className="min-w-0 flex-1 truncate font-mono text-xs text-slate-200">{baseUrl}</code>
+              <CopyButton value={baseUrl} />
+            </div>
             <Tabs defaultValue="sdk">
-              <TabsList>
+              <TabsList variant="pill">
                 <TabsTrigger value="sdk">TypeScript SDK</TabsTrigger>
                 <TabsTrigger value="curl">curl</TabsTrigger>
                 <TabsTrigger value="js">JavaScript</TabsTrigger>
               </TabsList>
-              <TabsContent value="sdk">
-                <CodeBlock language="typescript" code={code.sdk} />
+              <TabsContent value="sdk" className="mt-4">
+                <CodeBlock title="evaluate.ts" code={code.sdk} />
               </TabsContent>
-              <TabsContent value="curl">
-                <CodeBlock language="bash" code={code.curl} />
+              <TabsContent value="curl" className="mt-4">
+                <CodeBlock title="run.sh" code={code.curl} />
               </TabsContent>
-              <TabsContent value="js">
-                <CodeBlock language="javascript" code={code.js} />
+              <TabsContent value="js" className="mt-4">
+                <CodeBlock title="queue-run.mjs" code={code.js} />
               </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="self-start">
           <CardHeader>
             <CardTitle>Install the SDK</CardTitle>
+            <CardDescription>Not published to npm yet — build it from the repository.</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
+          <CardContent className="flex flex-col gap-4 text-[13px] leading-relaxed text-muted-foreground">
             <p>
-              <code className="text-foreground">@atlasguard/sdk</code> lives in <code>packages/sdk</code> of the AtlasGuard repository and is
-              not published to npm yet. Build it and install the local package:
+              <code className="font-mono text-foreground">@atlasguard/sdk</code> lives in <code className="font-mono">packages/sdk</code> of the AtlasGuard
+              repository. Build it and install the local package:
             </p>
             <CodeBlock
-              language="bash"
+              title="terminal"
               code={`git clone https://github.com/kobiowuquadri/atlasguard-backend.git && cd atlasguard-backend
 pnpm install && pnpm --filter @atlasguard/sdk build
 cd packages/sdk && npm pack
@@ -293,7 +318,7 @@ npm install /path/to/atlasguard-sdk-0.1.0.tgz`}
             />
             <p>Requires Node.js 18+ (global fetch) or any modern browser runtime. Keep API keys server-side.</p>
             <p>
-              Authentication: <code className="text-foreground">Authorization: Bearer ag_…</code> (or <code>X-API-Key</code>). Keys
+              Authentication: <code className="font-mono text-foreground">Authorization: Bearer ag_…</code> (or <code className="font-mono">X-API-Key</code>). Keys
               restricted to a project can only see that project.
             </p>
           </CardContent>
