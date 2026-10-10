@@ -1,0 +1,5 @@
+# Single-package project; this file only carries pnpm settings.
+onlyBuiltDependencies:
+  - sharp
+  - "@tailwindcss/oxide"
+  - unrs-resolver
