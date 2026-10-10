@@ -3,41 +3,51 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-/** AtlasGuard mark: a shield whose inner arcs read as a globe's meridians. */
+/*
+ * AtlasGuard mark — "Orbit A": an A whose crossbar is an orbit, passing in front of the left
+ * leg and behind the right. Monochrome (currentColor); same geometry as public/brand/*.svg.
+ */
+const LEGS = 'M13.75 60 32 17 50.25 60';
+const RIGHT_LEG = 'M32 17 50.25 60';
+const ORBIT = 'M6.04 41.85A28 6.5-16 0 0 58.91 26.23';
+
 export function LogoMark({ className }: { className?: string }) {
-  // Unique gradient ids: a duplicate id inside a hidden copy of the logo would blank the others.
-  const id = `ag${React.useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  // Unique ids: several marks can share a page, and a duplicate id in a hidden copy would blank the others.
+  const p = `ag${React.useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   return (
-    <svg viewBox="0 0 32 32" className={cn('size-7', className)} aria-hidden>
+    <svg viewBox="0 0 64 64" className={cn('size-7', className)} aria-hidden>
       <defs>
-        <linearGradient id={`${id}-g`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#a78bfa" />
-          <stop offset="0.5" stopColor="#7c3aed" />
-          <stop offset="1" stopColor="#06b6d4" />
-        </linearGradient>
-        <linearGradient id={`${id}-s`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#fff" stopOpacity="0.35" />
-          <stop offset="0.5" stopColor="#fff" stopOpacity="0" />
-        </linearGradient>
+        <clipPath id={`${p}-base`}>
+          <rect width="64" height="56" />
+        </clipPath>
+        <clipPath id={`${p}-l`}>
+          <rect width="32" height="64" />
+        </clipPath>
+        <clipPath id={`${p}-r`}>
+          <rect x="32" width="32" height="64" />
+        </clipPath>
+        <mask id={`${p}-legs`} maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+          <rect width="64" height="64" fill="#fff" />
+          <path d={ORBIT} fill="none" stroke="#000" strokeWidth="9" clipPath={`url(#${p}-l)`} />
+        </mask>
+        <mask id={`${p}-orbit`} maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+          <rect width="64" height="64" fill="#fff" />
+          <path d={RIGHT_LEG} fill="none" stroke="#000" strokeWidth="11" clipPath={`url(#${p}-r)`} />
+        </mask>
       </defs>
-      <path d="M16 2.5 4.5 7v8.2c0 7.1 4.9 12.6 11.5 14.3 6.6-1.7 11.5-7.2 11.5-14.3V7L16 2.5Z" fill={`url(#${id}-g)`} />
-      <path d="M16 2.5 4.5 7v8.2c0 7.1 4.9 12.6 11.5 14.3 6.6-1.7 11.5-7.2 11.5-14.3V7L16 2.5Z" fill={`url(#${id}-s)`} />
-      <path
-        d="M16 8.2c-3.7 0-6.7 3-6.7 6.7s3 6.7 6.7 6.7 6.7-3 6.7-6.7-3-6.7-6.7-6.7Zm0 0c-1.9 1.8-2.9 4.1-2.9 6.7s1 4.9 2.9 6.7m0-13.4c1.9 1.8 2.9 4.1 2.9 6.7s-1 4.9-2.9 6.7M9.3 14.9h13.4"
-        fill="none"
-        stroke="#0b0b10"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
+      <g clipPath={`url(#${p}-base)`} mask={`url(#${p}-legs)`}>
+        <path d={LEGS} fill="none" stroke="currentColor" strokeWidth="7" strokeMiterlimit="10" />
+      </g>
+      <path d={ORBIT} fill="none" stroke="currentColor" strokeWidth="5" mask={`url(#${p}-orbit)`} />
     </svg>
   );
 }
 
 export function Logo({ className, tag }: { className?: string; tag?: string }) {
   return (
-    <span className={cn('inline-flex items-center gap-2.5', className)}>
-      <LogoMark />
-      <span className="text-[15px] font-semibold tracking-[-0.01em]">AtlasGuard</span>
+    <span className={cn('inline-flex items-center gap-2', className)}>
+      <LogoMark className="size-6 text-foreground" />
+      <span className="text-[15px] font-semibold tracking-[-0.025em] text-foreground">AtlasGuard</span>
       {tag && (
         <span className="rounded-full bg-white/[0.05] px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.08em] text-muted-foreground uppercase inset-ring inset-ring-white/10">
           {tag}
